@@ -9,8 +9,8 @@ cur = conn.cursor()
 
 def display_table(cells):
     whole_table = cells
-    headinglist = ['Scientific name', 'Common name', 'Pop', 'Ref Pop', 'Ref Year', 'Drop', 'Geo Range', 'Updated', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Trend', 'Weight', 'Unit']
-    widths = [18, 19, 7, 10, 8, 5, 10, 10, 8, 8, 8, 12, 9, 10, 7, 5]
+    headinglist = ['#', 'Scientific name', 'Common name', 'Pop', 'Ref Pop', 'Ref Year', 'Drop', 'Geo', 'Updated', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Trend', 'Wt', 'U']
+    widths = [2, 23, 25, 6, 8, 8, 5, 5, 10, 8, 8, 8, 15, 12, 4, 4, 2]
     vert = '|'
     horizontal = '+'
     for w in widths:
@@ -28,9 +28,8 @@ def view_whole_table():
     vwtsql = "SELECT * FROM species"
     cur.execute(vwtsql)
     whole_table = cur.fetchall()
-    print(whole_table)
-    headinglist = ['Scientific name', 'Common name', 'Pop', 'Ref Pop', 'Ref Year', 'Drop', 'Geo Range', 'Updated', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Trend', 'Weight', 'Unit']
-    widths = [18, 19, 7, 10, 8, 5, 10, 10, 8, 8, 8, 12, 9, 10, 7, 5]
+    headinglist = ['#', 'Scientific name', 'Common name', 'Pop', 'Ref Pop', 'Ref Year', 'Drop', 'Geo', 'Updated', 'Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Trend', 'Wt', 'U']
+    widths = [2, 23, 25, 6, 8, 8, 5, 5, 10, 8, 8, 8, 15, 12, 4, 4, 2]
     vert = '|'
     horizontal = '+'
     for w in widths:
@@ -47,28 +46,44 @@ def search_by_common_name():
     while True:
         interest_name = str(input("Please enter a name to search for: "))
         ifsql = "SELECT common_name FROM species WHERE common_name = %s"
-        if cur.execute(ifsql, (interest_name,)):
-            ifsql2 = "SELECT scientific_name AS Scientific_name, common_name AS Common_name, current_population AS Current_Population_Estimate, historic_population AS Earlier_Reference_Estimated_Population, historic_year AS Approximate_Year_of_Reference_Population, percent_decline AS Percent_Drop_between_Current_and_Reference_Populations, native_range AS General_Region_Species_From, last_updated AS Date_Data_Last_Updated, sci_kingdom AS Kingdom, sci_phylum AS Phylum, sci_class AS Class, sci_order AS Order, sci_family AS Family, pop_trend AS Trend, upper_weight AS Maximum_Weight, weight_units AS Unit FROM species WHERE common_name = %s"
+        cur.execute(ifsql, (interest_name,))
+        equal_names = cur.fetchall()
+        if len(equal_names) > 0:
+            ifsql2 = "SELECT * FROM species WHERE common_name = %s"
             cur.execute(ifsql2, (interest_name,))
             namecells = cur.fetchall()
             display_table(namecells)
             break
         else:
             print("That is not currently in the database.")
+            while True:
+                escape = input("Select (e) to exit, or (c) to continue ")
+                if escape.lower() == 'e':
+                    exit()
+                else:
+                    break
 
 
 def search_by_sci_name():
     while True:
         interest_sci_name = input("Please enter a scientific name to search for: ")
         ifsql3 = "SELECT scientific_name FROM species WHERE scientific_name = %s"
-        if cur.execute(ifsql3, (interest_sci_name,)):
-            ifsql4 = "SELECT scientific_name AS 'Scientific name', common_name AS 'Common name', current_population AS 'Current Population Estimate', historic_population AS 'Earlier Reference Estimated Population', historic_year AS 'Approximate Year of Reference Population', percent_decline AS 'Percent Drop between Current and Reference Populations', native_range AS 'General Region Species From', last_updated AS 'Date Data Last Updated', sci_kingdom AS Kingdom, sci_phylum AS Phylum, sci_class AS Class, sci_order AS Order, sci_family AS Family, pop_trend AS Trend, upper_weight AS 'Maximum Weight', weight_units AS Unit FROM species WHERE scientific_name = %s"
+        cur.execute(ifsql3, (interest_sci_name,))
+        equal_name = cur.fetchall()
+        if len(equal_name) > 0:
+            ifsql4 = "SELECT * FROM species WHERE scientific_name = %s"
             cur.execute(ifsql4, (interest_sci_name,))
             scinamecells = cur.fetchall()
             display_table(scinamecells)
             break
         else:
             print("That is not currently in the database.")
+            while True:
+                escape = input("Select (e) to exit, or (c) to continue ")
+                if escape.lower() == 'e':
+                    exit()
+                else:
+                    break
 
 
 def searchlist():
@@ -119,13 +134,17 @@ def add_row():
         weight_unit = input("Enter kg if kilograms were just used, or the "
                             "alternate unit chosen if applicable: ")
         sqlif6 = "SELECT scientific_name FROM species WHERE scientific_name = %s"
-        if cur.execute(sqlif6, (speciesadd,)):
+        cur.execute(sqlif6, (speciesadd,))
+        check_presence = cur.fetchall()
+        if len(check_presence) > 0:
             print("That species is already in the database.")
+            break
         else:
             sqlinsert = "INSERT INTO species (scientific_name, common_name, current_population, historic_population, historic_year, percent_decline, native_range, last_updated, sci_kingdom, sci_phylum, sci_class, sci_order, sci_family, pop_trend, upper_weight, weight_units) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             cur.execute(sqlinsert, (speciesadd, commonadd, current_popadd, histpopadd, histyear, percentdecline, range_of_species, dateadded, kingdom_species, phylum_species, class_species, order_species, family_species, trend_of_pop, max_weight, weight_unit))
-            addedcells = cur.fetchall()
-            display_table(addedcells)
+            conn.commit()
+            break
+
 
 def see_top_declines():
     cur.execute("SELECT * from species ORDER BY percent_decline DESC")
@@ -146,11 +165,12 @@ def edit_rows():
     population_trend = input("Enter whether the population tred is increasing,"
                              " decreasing, stable, or unknown: ")
     sqlif7 = "SELECT scientific_name FROM species WHERE scientific_name = %s;"
-    if cur.execute(sqlif7, (row_to_edit,)):
+    cur.execute(sqlif7, (row_to_edit,))
+    existence_check = cur.fetchall()
+    if len(existence_check) > 0:
         sqlif8 = "UPDATE species SET current_population = %s, last_updated = %s, percent_decline = %s, pop_trend = %s WHERE scientific_name = %s"
-        cur.execute = (sqlif8, (current_number, today, per_decline, population_trend, row_to_edit))
-        editedcells = cur.fetchall()
-        display_table(editedcells)
+        cur.execute(sqlif8, (current_number, today, per_decline, population_trend, row_to_edit))
+        conn.commit()
     else:
         print("That species is not yet in the database.")
 
