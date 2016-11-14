@@ -124,11 +124,13 @@ def add_row():
         else:
             sqlinsert = "INSERT INTO species (scientific_name, common_name, current_population, historic_population, historic_year, percent_decline, native_range, last_updated, sci_kingdom, sci_phylum, sci_class, sci_order, sci_family, pop_trend, upper_weight, weight_units) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             cur.execute(sqlinsert, (speciesadd, commonadd, current_popadd, histpopadd, histyear, percentdecline, range_of_species, dateadded, kingdom_species, phylum_species, class_species, order_species, family_species, trend_of_pop, max_weight, weight_unit))
-
+            addedcells = cur.fetchall()
+            display_table(addedcells)
 
 def see_top_declines():
     cur.execute("SELECT * from species ORDER BY percent_decline DESC")
-    print(cur.fetchall())
+    orderedcells = cur.fetchall()
+    display_table(orderedcells)
 
 
 def edit_rows():
@@ -147,6 +149,8 @@ def edit_rows():
     if cur.execute(sqlif7, (row_to_edit,)):
         sqlif8 = "UPDATE species SET current_population = %s, last_updated = %s, percent_decline = %s, pop_trend = %s WHERE scientific_name = %s"
         cur.execute = (sqlif8, (current_number, today, per_decline, population_trend, row_to_edit))
+        editedcells = cur.fetchall()
+        display_table(editedcells)
     else:
         print("That species is not yet in the database.")
 
